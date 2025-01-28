@@ -23,13 +23,13 @@ struct Step {
 
 /// proof that leaf is included in a tree with the given root
 #[derive(Debug)]
-struct MerkleProof {
+pub struct MerkleProof {
     path: Vec<Step>,
     root: u64,
     leaf: u64,
 }
 
-struct MerkleTree<T> {
+pub struct MerkleTree<T> {
     values: Vec<T>,
 }
 
@@ -100,6 +100,10 @@ where
         Ok(proof)
     }
 
+    pub fn contains(&self, hash: &u64) -> bool {
+        self.leafs().contains(hash)
+    }
+
     pub fn verify_proof(proof: &MerkleProof) -> bool {
         let mut acc = proof.leaf;
 
@@ -141,22 +145,6 @@ where
     }
 }
 
-fn main() {
-    let values: Vec<u32> = (0..4).collect();
-    let mut tree = MerkleTree::from(values);
-    tree.add(4);
-
-    println!("leafs: {:?}", tree.leafs());
-
-    let root = tree.root();
-    println!("root {}", root);
-
-    let p = tree.get_proof(2).unwrap();
-    println!("proof: {:?}", p);
-
-    println!("valid: {:?}", MerkleTree::<u32>::verify_proof(&p));
-}
-
 #[test]
 fn basic_proof() -> eyre::Result<()> {
     let values: Vec<u32> = (0..100_000).collect();
@@ -193,4 +181,17 @@ fn out_of_bounds() {
 
     let proof = tree.get_proof(2);
     assert!(proof.is_err());
+}
+
+#[test]
+fn contains() {
+    let mut tree: MerkleTree<u32> = MerkleTree::from(vec![1, 2]);
+
+    let elem = 3;
+    let hash = MerkleTree::<u32>::hash_leaf(&elem);
+
+    assert!(!tree.contains(&hash));
+
+    tree.add(elem);
+    assert!(tree.contains(&hash));
 }
